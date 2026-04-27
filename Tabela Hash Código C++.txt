@@ -1,0 +1,196 @@
+#include <iostream>
+using namespace std;
+
+// Função hash simples para inteiros
+int funcaoHash(int chave, int M) {
+    return chave % M;
+}
+
+// Nó da lista encadeada
+class noh {
+    friend class tabelaHash;
+private:
+    int chave;   // página lógica
+    int valor;   // frame físico
+    noh* proximo;
+public:
+    noh(int c, int v) {
+        chave = c;
+        valor = v;
+        proximo = NULL;
+    }
+};
+
+// Tabela Hash (tabela de páginas)
+class tabelaHash {
+private:
+    noh** elementos;
+    int capacidade;
+
+public:
+    tabelaHash(int cap);
+    ~tabelaHash();
+
+    void insere(int chave, int valor);
+    int recupera(int chave);
+    void altera(int chave, int valor);
+    void remove(int chave);
+    void percorre();
+};
+
+// Construtor
+tabelaHash::tabelaHash(int cap) {
+    capacidade = cap;
+    elementos = new noh * [capacidade];
+
+    for (int i = 0; i < capacidade; i++) {
+        elementos[i] = NULL;
+    }
+}
+
+// Destrutor
+tabelaHash::~tabelaHash() {
+    for (int i = 0; i < capacidade; i++) {
+        noh* atual = elementos[i];
+        while (atual != NULL) {
+            noh* aux = atual;
+            atual = atual->proximo;
+            delete aux;
+        }
+    }
+    delete[] elementos;
+}
+
+// Inserir página → frame
+void tabelaHash::insere(int chave, int valor) {
+    int hash = funcaoHash(chave, capacidade);
+
+    noh* atual = elementos[hash];
+
+    // Verifica se já existe
+    while (atual != NULL) {
+        if (atual->chave == chave) {
+            cout << "Pagina " << chave << " ja esta mapeada!\n";
+            return;
+        }
+        atual = atual->proximo;
+    }
+
+    // Insere no início (mais eficiente)
+    noh* novo = new noh(chave, valor);
+    novo->proximo = elementos[hash];
+    elementos[hash] = novo;
+
+    cout << "Mapeado: Pagina " << chave << " -> Frame " << valor << endl;
+}
+
+// Buscar página
+int tabelaHash::recupera(int chave) {
+    int hash = funcaoHash(chave, capacidade);
+
+    noh* atual = elementos[hash];
+
+    while (atual != NULL) {
+        if (atual->chave == chave) {
+            return atual->valor;
+        }
+        atual = atual->proximo;
+    }
+
+    return -1; // PAGE FAULT
+}
+
+// Alterar mapeamento
+void tabelaHash::altera(int chave, int valor) {
+    int hash = funcaoHash(chave, capacidade);
+
+    noh* atual = elementos[hash];
+
+    while (atual != NULL) {
+        if (atual->chave == chave) {
+            atual->valor = valor;
+            cout << "Alterado: PAgina " << chave << " -> Frame " << valor << endl;
+            return;
+        }
+        atual = atual->proximo;
+    }
+
+    cout << "ERRO: Pagina nao encontrada para alteracao\n";
+}
+
+// Remover página
+void tabelaHash::remove(int chave) {
+    int hash = funcaoHash(chave, capacidade);
+
+    noh* atual = elementos[hash];
+    noh* anterior = NULL;
+
+    while (atual != NULL && atual->chave != chave) {
+        anterior = atual;
+        atual = atual->proximo;
+    }
+
+    if (atual == NULL) {
+        cout << "ERRO: Pagina não encontrada para remocao\n";
+        return;
+    }
+
+    if (anterior == NULL) {
+        elementos[hash] = atual->proximo;
+    }
+    else {
+        anterior->proximo = atual->proximo;
+    }
+
+    delete atual;
+    cout << "Pagina " << chave << " removida\n";
+}
+
+// Mostrar tabela
+void tabelaHash::percorre() {
+    cout << "\n----- TABELA DE PAGINAS -----\n";
+
+    for (int i = 0; i < capacidade; i++) {
+        cout << i << ": ";
+        noh* atual = elementos[i];
+
+        while (atual != NULL) {
+            cout << "[P:" << atual->chave
+                << " -> F:" << atual->valor << "] -> ";
+            atual = atual->proximo;
+        }
+
+        cout << "NULL\n";
+    }
+
+    cout << "-----------------------------\n";
+}
+
+// MAIN (simulação)
+int main() {
+    tabelaHash th(5);
+
+    // Inserindo páginas
+    th.insere(0, 10);
+    th.insere(1, 20);
+    th.insere(2, 30);
+    th.insere(7, 40); // colisão
+
+    th.percorre();
+
+    int pagina;
+    cout << "\nDigite uma pagina logica para buscar: ";
+    cin >> pagina;
+
+    int frame = th.recupera(pagina);
+
+    if (frame == -1) {
+        cout << "PAGE FAULT!\n";
+    }
+    else {
+        cout << "Pagina " << pagina
+            << " esta no Frame " << frame << endl;
+    }
+
+    return 0;
+}
