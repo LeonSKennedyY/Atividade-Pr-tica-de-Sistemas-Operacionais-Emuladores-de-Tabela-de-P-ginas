@@ -1,0 +1,1 @@
+# Atividade-Pr-tica-de-Sistemas-Operacionais-Emuladores-de-Tabela-de-P-ginas
